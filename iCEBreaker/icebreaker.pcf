@@ -1,0 +1,17 @@
+set_io received[0] 28
+set_io received[1] 31
+set_io received[2] 32
+set_io received[3] 34
+set_io received[4] 36
+set_io received[5] 38
+set_io received[6] 42
+set_io received[7] 43
+
+set_io rx_pin 4
+
+set_io led_green 37
+set_io led_red 11
+
+set_io usr_btn 10
+
+set_io CLK 35
