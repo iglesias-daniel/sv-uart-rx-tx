@@ -24,7 +24,7 @@ module top (
 endmodule
 
 module uart_rx #(
-    parameter BAUD_DIV = 434, // baud_rate = 115200 with 50MHz clock
+    parameter BAUD_DIV = 434,
     parameter DATA_BITS = 8,
     parameter ENABLE_PARITY = 1,
 ) (
@@ -36,13 +36,13 @@ module uart_rx #(
     output logic error
 );
 
-    logic tick;
-    logic [15:0] counter;
-    logic [$clog2(DATA_BITS):0] bit_counter;
+    logic tick; // Tick que señala cuando hay que medir el bit del mensaje entrante
+    logic [15:0] counter; // Contador interno para sincronizar bien los baudios
+    logic [$clog2(DATA_BITS):0] bit_counter; // Contador de bits recibidos del mensaje
     logic parity_bit;
     logic k;
 
-    logic income_message;
+    logic income_message; // Señal de que un mensaje está entrando
 
     // Ticker
     always_ff @(posedge clk or negedge rst_n) begin
@@ -52,12 +52,19 @@ module uart_rx #(
             income_message <= 0;
         end else begin
             if (!rx) begin
+                /* El protocolo UART empieza con un bit = 0 al inicio del mensaje,
+                por lo que, al ser rx = 0, significa que un mensaje está llegando. */
                 income_message <= 1;
             end
             if (!income_message) begin
+                /* Si no está llegando ningún mensaje, el counter y el tick se mantienen
+                en 0 */
                 counter <= 0;
                 tick <= 0;
             end else begin
+                /* En caso de sí estar llegando un mensaje empieza a contar el counter para
+                sincronizarse de acuerdo a los baudios. Cada vez que se alcanza la frecuencia
+                deseada, se general el tick */
                 if (counter == BAUD_DIV - 1) begin
                     tick <= 1;
                     counter <= 0;
@@ -65,14 +72,17 @@ module uart_rx #(
                     tick <= 0;
                     counter <= counter + 1;
                 end
-                if (next_state == WAIT) begin //Modificar esto
+                /* Si el próximo estado de la FSM va a ser WAIT, significa que se han recibido
+                todos los bits del mensaje, y ya no hay un mensaje llegando, por lo que se
+                establece en 0 */
+                if (next_state == WAIT) begin // Quizas sea STOP aquí
                     income_message <= 0;
                 end
             end
         end
     end
 
-    // FSM States
+    /* Esta máquina de estados indica que se esta recibiendo, o si se esta esperando */
     typedef enum logic [1:0] {
         WAIT,
         DATA,
@@ -80,16 +90,21 @@ module uart_rx #(
         STOP
     } state_t;
 
+    /* Se define el state actual, y el próximo state */
     state_t state, next_state;
 
+    /* La siguiente parte del código describe que hace cada estado */
     always_ff @(posedge tick or negedge rst_n) begin
         if (!rst_n) begin
             state <= WAIT;
             bit_counter <= 0;
             data_out <= 0;
+            error <= 0;
         end else begin
             case (state)
                 WAIT: begin
+                    /* Este es el estado default, establece ready = 0, si se está recibiendo un mensaje
+                    y un ready = 1 si no lo está */
                     if (income_message) begin
                         ready <= 0;
                     end else begin
@@ -97,6 +112,8 @@ module uart_rx #(
                     end
                 end
                 DATA: begin
+                    /* Este estado se encarga de ir guardando bit a bit el mensaje que llega. En caso de
+                    que se reciban todos los bits, se resetea el bit_counter*/
                     data_out[bit_counter] <= rx;
                     if (bit_counter == DATA_BITS-1)
                         bit_counter <= 0;
@@ -104,22 +121,33 @@ module uart_rx #(
                         bit_counter <= bit_counter + 1;
                 end
                 PARITY: parity_bit <= rx;
-                STOP: begin 
+                STOP: begin
+                    /* Recibido el final del mensaje, se establece ready = 1 */
                     ready <= 1;
+                    /* También se determina si existe un error en el mensaje, si está activada la paridad */
+                    if (ENABLE_PARITY)
+                        error <= (parity_bit == ^data_out);
+                    else
+                        error <= 0;
                 end
             endcase
+            /* Se actualiza el estado al siguiente estado */
             state <= next_state;
         end
     end
 
+    /* La siguiente parte del código describe como se elige el siguiente estado */
     always_comb begin
+        /* En caso de no cambiar de estado, se mantiene el actual.*/
         next_state = state;
         case (state)
             WAIT: begin
+                /* Sale del estado WAIT a DATA si empieza a recibir un mensaje */
                 if (income_message)
                     next_state = DATA;
             end
             DATA: begin
+                /* Al llegar todos los bits, se considera paridad si así está configurado */
                 if (bit_counter == DATA_BITS -1)
                     if (ENABLE_PARITY)
                         next_state = PARITY;
