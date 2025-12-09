@@ -4,9 +4,9 @@ module top (
     input clk,
     input usr_btn,
     input rx_pin,
-    output logic [7:0] received,
-    output logic led_green,
-    output logic led_red
+    output reg [7:0] received,
+    output wire led_green,
+    output wire led_red
 );
     uart_rx #(
         .BAUD_DIV(1250),
@@ -31,21 +31,21 @@ module uart_rx #(
     input clk,
     input rx,
     input rst_n,
-    output logic ready,
-    output logic [DATA_BITS-1:0] data_out,
-    output logic error
+    output reg ready,
+    output reg [DATA_BITS-1:0] data_out,
+    output reg error
 );
 
-    logic tick; // Tick que señala cuando hay que medir el bit del mensaje entrante
-    logic [15:0] counter; // Contador interno para sincronizar bien los baudios
-    logic [$clog2(DATA_BITS):0] bit_counter; // Contador de bits recibidos del mensaje
-    logic parity_bit;
-    logic k;
+    reg tick; // Tick que señala cuando hay que medir el bit del mensaje entrante
+    reg [15:0] counter; // Contador interno para sincronizar bien los baudios
+    reg [$clog2(DATA_BITS):0] bit_counter; // Contador de bits recibidos del mensaje
+    reg parity_bit;
+    reg k;
 
-    logic income_message; // Señal de que un mensaje está entrando
+    reg income_message; // Señal de que un mensaje está entrando
 
     // Ticker
-    always_ff @(posedge clk or negedge rst_n) begin
+    always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             counter <= 0;
             tick <= 0;
@@ -83,23 +83,22 @@ module uart_rx #(
     end
 
     /* Esta máquina de estados indica que se esta recibiendo, o si se esta esperando */
-    typedef enum logic [1:0] {
-        WAIT,
-        DATA,
-        PARITY,
-        STOP
-    } state_t;
-
+    localparam WAIT = 2'b00;
+    localparam DATA = 2'b00;
+    localparam PARITY = 2'b00;
+    localparam STOP = 2'b00;
+    
     /* Se define el state actual, y el próximo state */
-    state_t state, next_state;
+    reg [1:0] state, next_state;
 
     /* La siguiente parte del código describe que hace cada estado */
-    always_ff @(posedge tick or negedge rst_n) begin
+    always @(posedge tick or negedge rst_n) begin
         if (!rst_n) begin
             state <= WAIT;
             bit_counter <= 0;
             data_out <= 0;
             error <= 0;
+            parity_bit <= 0; 
         end else begin
             case (state)
                 WAIT: begin
@@ -137,7 +136,7 @@ module uart_rx #(
     end
 
     /* La siguiente parte del código describe como se elige el siguiente estado */
-    always_comb begin
+    always @(*) begin
         /* En caso de no cambiar de estado, se mantiene el actual.*/
         next_state = state;
         case (state)

@@ -14,4 +14,4 @@ set_io led_red 11
 
 set_io usr_btn 10
 
-set_io CLK 35
+set_io clk 35
