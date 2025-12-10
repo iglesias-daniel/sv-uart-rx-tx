@@ -121,7 +121,7 @@ module uart_rx #(
             bit_counter <= 0;
             data_out <= 0;
             error <= 0;
-            parity_bit <= 0; 
+            parity_bit <= 0;
         end else if (tick) begin
             case (state)
                 WAIT: begin
