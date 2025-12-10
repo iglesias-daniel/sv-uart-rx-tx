@@ -64,13 +64,24 @@ module uart_rx #(
             end else begin
                 /* En caso de sí estar llegando un mensaje empieza a contar el counter para
                 sincronizarse de acuerdo a los baudios. Cada vez que se alcanza la frecuencia
-                deseada, se general el tick */
-                if (counter == BAUD_DIV - 1) begin
-                    tick <= 1;
-                    counter <= 0;
+                deseada, se general el tick. El primer tick demora 1.5 de la frecuencia, para
+                que la medición se realice en medio del bit recibido. */
+                if (state == WAIT) begin
+                    if (counter == BAUD_DIV*1.5 - 1) begin
+                        tick <= 1;
+                        counter <= 0;
+                    end else begin
+                        tick <= 0;
+                        counter <= counter + 1;
+                    end
                 end else begin
-                    tick <= 0;
-                    counter <= counter + 1;
+                    if (counter == BAUD_DIV - 1) begin
+                        tick <= 1;
+                        counter <= 0;
+                    end else begin
+                        tick <= 0;
+                        counter <= counter + 1;
+                    end
                 end
                 /* Si el próximo estado de la FSM va a ser WAIT, significa que se han recibido
                 todos los bits del mensaje, y ya no hay un mensaje llegando, por lo que se
