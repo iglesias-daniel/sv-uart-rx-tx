@@ -1,11 +1,11 @@
-set_io received[0] 28
-set_io received[1] 31
-set_io received[2] 32
-set_io received[3] 34
-set_io received[4] 36
-set_io received[5] 38
-set_io received[6] 42
-set_io received[7] 43
+set_io led[0] 28
+set_io led[1] 31
+set_io led[2] 32
+set_io led[3] 34
+set_io led[4] 36
+set_io led[5] 38
+set_io led[6] 42
+set_io led[7] 43
 
 set_io rx_pin 4
 

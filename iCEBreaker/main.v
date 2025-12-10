@@ -4,10 +4,15 @@ module top (
     input clk,
     input usr_btn,
     input rx_pin,
-    output reg [7:0] received,
+    output wire [7:0] led,
     output wire led_green,
     output wire led_red
 );
+
+    wire ready_w;
+    wire error_w;
+    wire [7:0] received;
+
     uart_rx #(
         .BAUD_DIV(1250),
         .DATA_BITS(8),
@@ -16,17 +21,21 @@ module top (
         .clk(clk),
         .rx(rx_pin),
         .rst_n(usr_btn),
-        .ready(!led_green),
+        .ready(ready_w),
         .data_out(received),
-        .error(!led_red)
+        .error(error_w)
     );
+
+    assign led_green = ~ready_w;
+    assign led_red = ~error_w;
+    assign led = ~received;
 
 endmodule
 
 module uart_rx #(
     parameter BAUD_DIV = 434,
     parameter DATA_BITS = 8,
-    parameter ENABLE_PARITY = 1,
+    parameter ENABLE_PARITY = 1
 ) (
     input clk,
     input rx,
@@ -36,6 +45,17 @@ module uart_rx #(
     output reg error
 );
 
+
+    /* Esta máquina de estados indica que se esta recibiendo, o si se esta esperando */
+    localparam WAIT = 2'b00;
+    localparam DATA = 2'b01;
+    localparam PARITY = 2'b10;
+    localparam STOP = 2'b11;
+
+
+    /* Se define el state actual, y el próximo state */
+    reg [1:0] state, next_state;
+
     reg tick; // Tick que señala cuando hay que medir el bit del mensaje entrante
     reg [15:0] counter; // Contador interno para sincronizar bien los baudios
     reg [$clog2(DATA_BITS):0] bit_counter; // Contador de bits recibidos del mensaje
@@ -43,6 +63,7 @@ module uart_rx #(
     reg k;
 
     reg income_message; // Señal de que un mensaje está entrando
+
 
     // Ticker
     always @(posedge clk or negedge rst_n) begin
@@ -92,25 +113,16 @@ module uart_rx #(
             end
         end
     end
-
-    /* Esta máquina de estados indica que se esta recibiendo, o si se esta esperando */
-    localparam WAIT = 2'b00;
-    localparam DATA = 2'b00;
-    localparam PARITY = 2'b00;
-    localparam STOP = 2'b00;
     
-    /* Se define el state actual, y el próximo state */
-    reg [1:0] state, next_state;
-
     /* La siguiente parte del código describe que hace cada estado */
-    always @(posedge tick or negedge rst_n) begin
+    always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state <= WAIT;
             bit_counter <= 0;
             data_out <= 0;
             error <= 0;
             parity_bit <= 0; 
-        end else begin
+        end else if (tick) begin
             case (state)
                 WAIT: begin
                     /* Este es el estado default, establece ready = 0, si se está recibiendo un mensaje
@@ -136,7 +148,7 @@ module uart_rx #(
                     ready <= 1;
                     /* También se determina si existe un error en el mensaje, si está activada la paridad */
                     if (ENABLE_PARITY)
-                        error <= (parity_bit == ^data_out);
+                        error <= (parity_bit != ^data_out);
                     else
                         error <= 0;
                 end
