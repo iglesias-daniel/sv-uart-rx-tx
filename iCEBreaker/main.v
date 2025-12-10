@@ -72,10 +72,11 @@ module uart_rx #(
             tick <= 0;
             income_message <= 0;
         end else begin
-            if (!rx) begin
+            if (!rx & !income_message) begin
                 /* El protocolo UART empieza con un bit = 0 al inicio del mensaje,
                 por lo que, al ser rx = 0, significa que un mensaje está llegando. */
                 income_message <= 1;
+                tick <= 1;
             end
             if (!income_message) begin
                 /* Si no está llegando ningún mensaje, el counter y el tick se mantienen
@@ -99,6 +100,9 @@ module uart_rx #(
                     if (counter == BAUD_DIV - 1) begin
                         tick <= 1;
                         counter <= 0;
+                        if (next_state == WAIT) begin
+                            income_message <= 0;
+                        end 
                     end else begin
                         tick <= 0;
                         counter <= counter + 1;
@@ -107,9 +111,9 @@ module uart_rx #(
                 /* Si el próximo estado de la FSM va a ser WAIT, significa que se han recibido
                 todos los bits del mensaje, y ya no hay un mensaje llegando, por lo que se
                 establece en 0 */
-                if (next_state == WAIT) begin // Quizas sea STOP aquí
-                    income_message <= 0;
-                end
+                //if (state == STOP) begin
+                //    income_message <= 0;
+                //end
             end
         end
     end
@@ -119,6 +123,7 @@ module uart_rx #(
         if (!rst_n) begin
             state <= WAIT;
             bit_counter <= 0;
+            ready <= 1;
             data_out <= 0;
             error <= 0;
             parity_bit <= 0;
@@ -137,15 +142,18 @@ module uart_rx #(
                     /* Este estado se encarga de ir guardando bit a bit el mensaje que llega. En caso de
                     que se reciban todos los bits, se resetea el bit_counter*/
                     data_out[bit_counter] <= rx;
-                    if (bit_counter == DATA_BITS-1)
-                        bit_counter <= 0;
-                    else
-                        bit_counter <= bit_counter + 1;
+                    bit_counter <= bit_counter + 1;
+
+                    //if (bit_counter == DATA_BITS-1)
+                    //    bit_counter <= 0;
+                    //else
+                    //    bit_counter <= bit_counter + 1;
                 end
                 PARITY: parity_bit <= rx;
                 STOP: begin
                     /* Recibido el final del mensaje, se establece ready = 1 */
                     ready <= 1;
+                    bit_counter <= 0;
                     /* También se determina si existe un error en el mensaje, si está activada la paridad */
                     if (ENABLE_PARITY)
                         error <= (parity_bit != ^data_out);
@@ -170,7 +178,7 @@ module uart_rx #(
             end
             DATA: begin
                 /* Al llegar todos los bits, se considera paridad si así está configurado */
-                if (bit_counter == DATA_BITS -1)
+                if (bit_counter == DATA_BITS - 1)
                     if (ENABLE_PARITY)
                         next_state = PARITY;
                     else
