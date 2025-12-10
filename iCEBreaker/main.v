@@ -67,7 +67,7 @@ module uart_rx #(
                 deseada, se general el tick. El primer tick demora 1.5 de la frecuencia, para
                 que la medición se realice en medio del bit recibido. */
                 if (state == WAIT) begin
-                    if (counter == BAUD_DIV*1.5 - 1) begin
+                    if (counter == (BAUD_DIV + (BAUD_DIV >> 1)) - 1) begin
                         tick <= 1;
                         counter <= 0;
                     end else begin
