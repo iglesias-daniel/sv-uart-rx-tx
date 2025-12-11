@@ -98,6 +98,9 @@ module uart_rx #(
                         if (counter == BAUD_DIV - 1) begin
                             tick <= 1;
                             counter <= 0;
+                            /* Si el próximo estado de la FSM va a ser WAIT, significa que se han recibido
+                            todos los bits del mensaje, y ya no hay un mensaje llegando, por lo que se
+                            establece en 0 */
                             if (next_state == WAIT) begin
                                 income_message <= 0;
                             end 
@@ -107,12 +110,7 @@ module uart_rx #(
                         end
                     end
                 end
-                /* Si el próximo estado de la FSM va a ser WAIT, significa que se han recibido
-                todos los bits del mensaje, y ya no hay un mensaje llegando, por lo que se
-                establece en 0 */
-                // if (state == STOP) begin
-                //     income_message <= 0;
-                // end
+                
             end
         end
     end
@@ -142,11 +140,6 @@ module uart_rx #(
                     que se reciban todos los bits, se resetea el bit_counter*/
                     data_out[bit_counter] <= rx;
                     bit_counter <= bit_counter + 1;
-
-                    //if (bit_counter == DATA_BITS-1)
-                    //    bit_counter <= 0;
-                    //else
-                    //    bit_counter <= bit_counter + 1;
                 end
                 PARITY: parity_bit <= rx;
                 STOP: begin
