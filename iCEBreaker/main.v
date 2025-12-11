@@ -72,48 +72,47 @@ module uart_rx #(
             tick <= 0;
             income_message <= 0;
         end else begin
+            tick <= 0;
             if (!rx & !income_message) begin
                 /* El protocolo UART empieza con un bit = 0 al inicio del mensaje,
-                por lo que, al ser rx = 0, significa que un mensaje está llegando. */
+                por lo que, al ser rx = 0, significa que un mensaje está llegando.
+                Además, se inicia el tick inicial. */
                 income_message <= 1;
                 tick <= 1;
-            end
-            if (!income_message) begin
-                /* Si no está llegando ningún mensaje, el counter y el tick se mantienen
-                en 0 */
-                counter <= 0;
-                tick <= 0;
             end else begin
-                /* En caso de sí estar llegando un mensaje empieza a contar el counter para
-                sincronizarse de acuerdo a los baudios. Cada vez que se alcanza la frecuencia
-                deseada, se general el tick. El primer tick demora 1.5 de la frecuencia, para
-                que la medición se realice en medio del bit recibido. */
-                if (state == WAIT) begin
-                    if (counter == (BAUD_DIV + (BAUD_DIV >> 1)) - 1) begin
-                        tick <= 1;
-                        counter <= 0;
+                if (income_message) begin
+                    /* En caso de sí estar llegando un mensaje empieza a contar el counter para
+                    sincronizarse de acuerdo a los baudios. Cada vez que se alcanza la frecuencia
+                    deseada, se general el tick. El segundo tick demora 1.5 de la frecuencia, para
+                    que la medición se realice en medio del bit recibido. Para determinar que estamos
+                    contando el segundo, usamos el bit_counter.*/
+                    if (bit_counter == 0) begin
+                        if (counter == (BAUD_DIV + (BAUD_DIV >> 1)) - 1) begin
+                            tick <= 1;
+                            counter <= 0;
+                        end else begin
+                            tick <= 0;
+                            counter <= counter + 1;
+                        end
                     end else begin
-                        tick <= 0;
-                        counter <= counter + 1;
-                    end
-                end else begin
-                    if (counter == BAUD_DIV - 1) begin
-                        tick <= 1;
-                        counter <= 0;
-                        if (next_state == WAIT) begin
-                            income_message <= 0;
-                        end 
-                    end else begin
-                        tick <= 0;
-                        counter <= counter + 1;
+                        if (counter == BAUD_DIV - 1) begin
+                            tick <= 1;
+                            counter <= 0;
+                            if (next_state == WAIT) begin
+                                income_message <= 0;
+                            end 
+                        end else begin
+                            tick <= 0;
+                            counter <= counter + 1;
+                        end
                     end
                 end
                 /* Si el próximo estado de la FSM va a ser WAIT, significa que se han recibido
                 todos los bits del mensaje, y ya no hay un mensaje llegando, por lo que se
                 establece en 0 */
-                //if (state == STOP) begin
-                //    income_message <= 0;
-                //end
+                // if (state == STOP) begin
+                //     income_message <= 0;
+                // end
             end
         end
     end
