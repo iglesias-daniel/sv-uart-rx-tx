@@ -150,14 +150,17 @@ module uart_rx #(
                 end
                 PARITY: parity_bit <= rx;
                 STOP: begin
-                    /* Recibido el final del mensaje, se establece ready = 1 */
-                    ready <= 1;
                     stop_counter <= stop_counter + 1;
+
                     /* También se determina si existe un error en el mensaje, si está activada la paridad */
                     if (ENABLE_PARITY)
-                        error <= (parity_bit != ^data_out) & (rx == 1);
+                        error <= (parity_bit != ^data_out) & (rx != 1);
                     else
-                        error <= (rx == 1);
+                        error <= (rx != 1);
+
+                    /* Recibido el final del mensaje, se establece ready = 1 */
+                    if (next_state == WAIT)
+                        ready <= 1;
                 end
             endcase
             /* Se actualiza el estado al siguiente estado */
