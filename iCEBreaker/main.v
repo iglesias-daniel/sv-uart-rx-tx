@@ -16,7 +16,7 @@ module top (
     uart_rx #(
         .BAUD_DIV(1250),
         .DATA_BITS(8),
-        .ENABLE_PARITY(0),
+        .PARITY_TYPE(0),
         .STOP_BIT(1)
     ) uart_rx_1 (
         .clk(clk),
@@ -36,7 +36,7 @@ endmodule
 module uart_rx #(
     parameter BAUD_DIV = 434,
     parameter DATA_BITS = 8,
-    parameter ENABLE_PARITY = 1,
+    parameter PARITY_TYPE = 1,
     parameter STOP_BIT = 1
 ) (
     input clk,
@@ -54,6 +54,10 @@ module uart_rx #(
     localparam PARITY = 2'b10;
     localparam STOP = 2'b11;
 
+    /* Tipos de paridad */
+    localparam PARITY_NONE = 0;
+    localparam PARITY_EVEN = 1;
+    localparam PARITY_ODD = 2;
 
     /* Se define el state actual, y el próximo state */
     reg [1:0] state, next_state;
@@ -150,13 +154,16 @@ module uart_rx #(
                 end
                 PARITY: parity_bit <= rx;
                 STOP: begin
+                    /* Este contador es por si hay más de un bit de parada */
                     stop_counter <= stop_counter + 1;
 
-                    /* También se determina si existe un error en el mensaje, si está activada la paridad */
-                    if (ENABLE_PARITY)
-                        error <= (parity_bit != ^data_out) & (rx != 1);
-                    else
-                        error <= (rx != 1);
+                    /* También se determina si existe un error en el mensaje, si está activada la paridad, segun el tipo de paridad*/
+                    case (PARITY_TYPE)
+                        PARITY_NONE: error <= (rx != 1);
+                        PARITY_EVEN: error <= (parity_bit != ^data_out) | (rx != 1);
+                        PARITY_ODD: error <= (parity_bit == ^data_out) | (rx != 1);
+                        default: error <= (rx != 1);
+                    endcase
 
                     /* Recibido el final del mensaje, se establece ready = 1 */
                     if (next_state == WAIT)
@@ -181,7 +188,7 @@ module uart_rx #(
             DATA: begin
                 /* Al llegar todos los bits, se considera paridad si así está configurado */
                 if (bit_counter == DATA_BITS - 1)
-                    if (ENABLE_PARITY)
+                    if ((PARITY_TYPE == PARITY_EVEN) || (PARITY_TYPE == PARITY_ODD))
                         next_state = PARITY;
                     else
                         next_state = STOP;
