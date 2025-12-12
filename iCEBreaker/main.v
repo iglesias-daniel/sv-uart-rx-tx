@@ -16,7 +16,8 @@ module top (
     uart_rx #(
         .BAUD_DIV(1250),
         .DATA_BITS(8),
-        .ENABLE_PARITY(0)
+        .ENABLE_PARITY(0),
+        .STOP_BIT(1)
     ) uart_rx_1 (
         .clk(clk),
         .rx(rx_pin),
@@ -35,7 +36,8 @@ endmodule
 module uart_rx #(
     parameter BAUD_DIV = 434,
     parameter DATA_BITS = 8,
-    parameter ENABLE_PARITY = 1
+    parameter ENABLE_PARITY = 1,
+    parameter STOP_BIT = 1
 ) (
     input clk,
     input rx,
@@ -59,6 +61,7 @@ module uart_rx #(
     reg tick; // Tick que señala cuando hay que medir el bit del mensaje entrante
     reg [15:0] counter; // Contador interno para sincronizar bien los baudios
     reg [$clog2(DATA_BITS):0] bit_counter; // Contador de bits recibidos del mensaje
+    reg [$clog2(DATA_BITS):0] stop_counter; // Contador en caso de tener más de un BIT de parada
     reg parity_bit;
     reg k;
 
@@ -120,6 +123,7 @@ module uart_rx #(
         if (!rst_n) begin
             state <= WAIT;
             bit_counter <= 0;
+            stop_counter <= 0;
             ready <= 1;
             data_out <= 0;
             error <= 0;
@@ -127,6 +131,9 @@ module uart_rx #(
         end else if (tick) begin
             case (state)
                 WAIT: begin
+                    /* Se reinician los contadores de los bits leídos y de la cantidad de bits de stop */
+                    bit_counter <= 0;
+                    stop_counter <= 0;
                     /* Este es el estado default, establece ready = 0, si se está recibiendo un mensaje
                     y un ready = 1 si no lo está */
                     if (income_message) begin
@@ -145,12 +152,12 @@ module uart_rx #(
                 STOP: begin
                     /* Recibido el final del mensaje, se establece ready = 1 */
                     ready <= 1;
-                    bit_counter <= 0;
+                    stop_counter <= stop_counter + 1;
                     /* También se determina si existe un error en el mensaje, si está activada la paridad */
                     if (ENABLE_PARITY)
-                        error <= (parity_bit != ^data_out);
+                        error <= (parity_bit != ^data_out) & (rx == 1);
                     else
-                        error <= 0;
+                        error <= (rx == 1);
                 end
             endcase
             /* Se actualiza el estado al siguiente estado */
@@ -179,7 +186,9 @@ module uart_rx #(
                     next_state = DATA;
             end
             PARITY: next_state = STOP;
-            STOP: next_state = WAIT;
+            STOP:
+                if (stop_counter == STOP_BIT - 1)
+                    next_state = WAIT;
             default: next_state = WAIT;
         endcase
     end
