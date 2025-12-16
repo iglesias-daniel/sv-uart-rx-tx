@@ -66,8 +66,7 @@ module uart_rx #(
     reg [15:0] counter; // Contador interno para sincronizar bien los baudios
     reg [$clog2(DATA_BITS):0] bit_counter; // Contador de bits recibidos del mensaje
     reg [$clog2(DATA_BITS):0] stop_counter; // Contador en caso de tener más de un BIT de parada
-    reg parity_bit;
-    reg k;
+    reg parity_bit; // Bit de paridad
 
     reg income_message; // Señal de que un mensaje está entrando
 
