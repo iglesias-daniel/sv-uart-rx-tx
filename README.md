@@ -27,7 +27,7 @@ cd sv-uart-rx-tx
 ```bash
 sudo apt update
 sudo apt install yosys nextpnr-ice40 fpga-icestorm iverilog gtkwave make git
-cd hardware
+cd hardware/iCEBreaker
 ```
 
 - You also need the `main.mk` file from the official iCEBreaker examples. You can copy it manually, write your own, or simply do:
