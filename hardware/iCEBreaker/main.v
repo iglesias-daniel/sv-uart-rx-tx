@@ -3,6 +3,7 @@
 module top (
     input clk,
     input usr_btn,
+    input valid,
     input rx_pin,
     input tx_pin,
     output wire [7:0] led,
@@ -36,7 +37,7 @@ module top (
         .STOP_BIT(1)
     ) uart_tx_1 (
         .clk(clk),
-        .valid(valid),
+        .valid(!valid),
         .data_in(received),
         .rst_n(usr_btn),
         .ready(ready_2),

@@ -14,5 +14,6 @@ set_io led_green 37
 set_io led_red 11
 
 set_io usr_btn 10
+set_io valid 27
 
 set_io clk 35
