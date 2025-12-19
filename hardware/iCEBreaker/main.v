@@ -5,7 +5,7 @@ module top (
     input usr_btn,
     input valid,
     input rx_pin,
-    input tx_pin,
+    output wire tx_pin,
     output wire [7:0] led,
     output wire led_green,
     output wire led_red
@@ -31,7 +31,7 @@ module top (
     );
 
     uart_tx #(
-        .BOUD_DIV(1250),
+        .BAUD_DIV(1250),
         .DATA_BITS(8),
         .PARITY_TYPE(0),
         .STOP_BIT(1)
@@ -292,6 +292,7 @@ module uart_tx #(
             tx <= 1;
             bit_counter <= 0;
             stop_counter <= 0;
+            ready <= 1;
         end else if (tick) begin
             case (state)
                 WAIT: begin
