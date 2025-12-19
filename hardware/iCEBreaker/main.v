@@ -17,7 +17,7 @@ module top (
     wire [7:0] received;
 
     uart_rx #(
-        .BAUD_DIV(10),
+        .BAUD_DIV(1250),
         .DATA_BITS(8),
         .PARITY_TYPE(0),
         .STOP_BIT(1)
@@ -31,7 +31,7 @@ module top (
     );
 
     uart_tx #(
-        .BAUD_DIV(10),
+        .BAUD_DIV(1250),
         .DATA_BITS(8),
         .PARITY_TYPE(0),
         .STOP_BIT(1)
