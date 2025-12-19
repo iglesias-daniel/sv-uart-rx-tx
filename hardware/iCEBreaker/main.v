@@ -17,7 +17,7 @@ module top (
     wire [7:0] received;
 
     uart_rx #(
-        .BAUD_DIV(1250),
+        .BAUD_DIV(10),
         .DATA_BITS(8),
         .PARITY_TYPE(0),
         .STOP_BIT(1)
@@ -31,7 +31,7 @@ module top (
     );
 
     uart_tx #(
-        .BAUD_DIV(1250),
+        .BAUD_DIV(10),
         .DATA_BITS(8),
         .PARITY_TYPE(0),
         .STOP_BIT(1)
@@ -49,6 +49,15 @@ module top (
     assign led = ~received;
 
 endmodule
+
+
+
+
+
+
+
+
+
 
 module uart_rx #(
     parameter BAUD_DIV = 434,
@@ -220,6 +229,15 @@ module uart_rx #(
     end
 endmodule
 
+
+
+
+
+
+
+
+
+
 module uart_tx #(
     parameter BAUD_DIV = 434,
     parameter DATA_BITS = 8,
@@ -296,6 +314,8 @@ module uart_tx #(
         end else if (tick) begin
             case (state)
                 WAIT: begin
+                    bit_counter <= 0;
+                    stop_counter <= 0;
                     if (valid) begin
                         tx <= 0;
                         ready <= 0;
