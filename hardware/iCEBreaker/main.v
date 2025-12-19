@@ -1,21 +1,38 @@
-// -- By Daniel Iglesias (2025) --
+/* -- By Daniel Iglesias (2025) --
+
+El siguiente ejemplo fue implementado para demostrar el correcto funcionamiento del protocolo UART implementado 
+en Verilog en una FPGA.
+
+Pruebas:
+ - Se ha enviado y recibido UART 9600 baudios SERIAL_8N1 con una ESP32S3. Con la siguiente conexión:
+
+    ESP32S3 (Wireless Lite 2)              iCEBreaker V1.0e
+            GND                                 GND
+            17 (Tx)                            3 (Rx)
+            18 (Rx)                            4 (Tx)
+
+Este código se proporciona tal cual, sin garantías de ningún tipo. El autor no se hace responsable de errores, 
+fallos, mal funcionamiento, pérdidas de datos ni de cualquier daño derivado de su uso.
+
+*/
 
 module top (
-    input clk,
-    input usr_btn,
-    input valid,
-    input rx_pin,
-    output wire tx_pin,
-    output wire [7:0] led,
-    output wire led_green,
-    output wire led_red
+    input clk, // Clock 12MHz en FPGA iCEBreaker
+    input usr_btn, // Boton para reset
+    input valid, // Boton para enviar mensaje
+    input rx_pin, // Pin conectado al Tx de la ESP32S3
+    output wire tx_pin, // Pin conectado al Rx de la ESP32S3
+    output wire [7:0] led, // LEDs para mostrar dato guardado
+    output wire led_green, // LED de ready
+    output wire led_red // LED de Error
 );
 
-    wire ready_1;
-    wire ready_2;
-    wire error_w;
-    wire [7:0] received;
+    wire ready_1; // Señala si está listo para recibir
+    wire ready_2; // Señala si está listo para enviar
+    wire error_w; // Señala si hay un error al recibir
+    wire [7:0] received; // Memoria donde se guarda lo recibido o a enviar
 
+    /* Recibe un dato y lo guarda en memoria received */
     uart_rx #(
         .BAUD_DIV(1250),
         .DATA_BITS(8),
@@ -30,6 +47,7 @@ module top (
         .error(error_w)
     );
 
+    /* Envía el dato que está en la memoria received al ser pulsado el botón valid */
     uart_tx #(
         .BAUD_DIV(1250),
         .DATA_BITS(8),
@@ -44,21 +62,13 @@ module top (
         .tx(tx_pin)
     );
 
-    assign led_green = ~(ready_1 & ready_2);
-    assign led_red = ~error_w;
-    assign led = ~received;
+    assign led_green = ~(ready_1 & ready_2); // En caso de estar listo (para recibir o enviar), se enciende el LED verde
+    assign led_red = ~error_w; // En caso de error se enciende el LED rojo
+    assign led = ~received; // Los datos guardados se muestran en LEDs
 
 endmodule
 
-
-
-
-
-
-
-
-
-
+/* Modulo para recibir mensajes por UART */
 module uart_rx #(
     parameter BAUD_DIV = 434,
     parameter DATA_BITS = 8,
@@ -229,15 +239,7 @@ module uart_rx #(
     end
 endmodule
 
-
-
-
-
-
-
-
-
-
+/* Modulo para enviar mensajes por UART */
 module uart_tx #(
     parameter BAUD_DIV = 434,
     parameter DATA_BITS = 8,
