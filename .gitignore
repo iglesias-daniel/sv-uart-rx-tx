@@ -1,31 +1,46 @@
+# =========================
+# Verilog / SystemVerilog
+# =========================
 
-*.out
-*.vcd
+# Simulation outputs
 *.vvp
+*.out
 *.exe
+
+# Waveforms
+*.vcd
+*.fst
 *.lxt
 *.wlf
 *.ghw
-*.o
-*.d
-*.a
 
-obj_dir/
-simv/
-csrc/
+# Build artifacts
 /build/
 /logs/
 /waves/
+obj_dir/
 
+# Simulator junk
+iverilog.log
+verilator.log
+transcript
+vsim.wlf
+work/
+modelsim.ini
+
+# Coverage
+coverage/
+*.gcda
+*.gcno
+*.gcov
+
+# Editor / OS junk
 *~
-*.log
-*.bak
-
-*.gtkw
-
-*.dump
-*.fst
-*.vpd
-
+.*.swp
 .DS_Store
-*.swp
+Thumbs.db
+.vscode/
+
+# Temp
+*.log
+*.tmp

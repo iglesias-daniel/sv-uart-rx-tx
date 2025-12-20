@@ -12,10 +12,10 @@ LOG_DIR := logs
 WAVE_DIR := waves
 
 # RTL files
-RTL_SRCS := $(wildcard $(RTL_DIR)/*.sv) $(wildcard $(RTL_DIR)/*.v)
+RTL_SRCS := $(wildcard $(RTL_DIR)/*.v)
 
 # Testbenches
-TB_SRCS := $(wildcard $(TB_DIR)/tb_*.sv)
+TB_SRCS  := $(wildcard $(TB_DIR)/tb_*.sv)
 TB_NAMES := $(basename $(notdir $(TB_SRCS)))
 
 # Tun targets
@@ -31,7 +31,7 @@ all: $(RUN_TARGETS)
 
 list:
 	@echo "Testbenches:"
-	@$(foreach t,$(TB_NAMES),echo " - $(t)";)
+	@$(foreach t,$(TB_NAMES),echo "  - $(t)";)
 
 # General rule: compile a TB
 $(BUILD_DIR)/%.vvp: $(TB_DIR)/%.sv $(RTL_SRCS)
@@ -43,8 +43,8 @@ run-%: $(BUILD_DIR)/%.vvp
 	@echo "== Running $* =="
 	@rm -f $(WAVE_DIR)/$*.vcd
 	@$(RUNNER) $< > $(LOG_DIR)/$*.log
-	@if [ -f waves.vcd]; then mv waves.vcd $(WAVE_DIR)/$*.vcd; fi
-	@echo "Log: $(LOG_DIR)/$*.log"
+	@if [ -f waves.vcd ]; then mv waves.vcd $(WAVE_DIR)/$*.vcd; fi
+	@echo "Log:  $(LOG_DIR)/$*.log"
 	@echo "Wave: $(WAVE_DIR)/$*.vcd"
 
 #Open GTKWave
