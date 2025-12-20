@@ -2,6 +2,10 @@
 *.out
 *.vcd
 *.vvp
+*.exe
+*.lxt
+*.wlf
+*.ghw
 *.o
 *.d
 *.a
@@ -9,6 +13,9 @@
 obj_dir/
 simv/
 csrc/
+/build/
+/logs/
+/waves/
 
 *~
 *.log
