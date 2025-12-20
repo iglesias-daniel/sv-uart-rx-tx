@@ -17,11 +17,11 @@ Synchronous UART RX/TX core in Verilog with a configurable baud rate, start/stop
 - To execute the testbench:
 
 ```bash
-    make iverilog # Compile generates .vvp file
-    make vpp # Run simulation
-    make gtkwave
+    make list # A list of all TB
+    make all # Run all TBs
+    make run-tb_name # Run tb_name
+    make wave-tb_name # Gtkwave for tb_name
     make clean
-    make all
 ```
 
 ## Use on real hardware
